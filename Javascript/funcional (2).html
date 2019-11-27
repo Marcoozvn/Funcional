@@ -1,0 +1,246 @@
+<html>
+    <header>
+        <h1>Programação Funcional</h1>
+    </header>
+
+    <body>
+        <label for="inputAno">Digite o ano(YYYY) </label>
+        <input type="text" name="inputAno" id="inputAno">
+        <label for="inputMes">Digite o mês(1-12) </label>
+        <input type="text" name="inputMes" id="inputMes">
+        <button type="button" id="botaoExecutar">Calcular</button>
+        <span id="semResultados" style="display: none;">Sem Resultados =(</span>
+        <div id="resultados">
+            <h3>Filtrar transações por ano</h3>
+            <textarea id="transacoes-ano" style="width: 500px; height: 150px"></textarea>
+            <hr>
+            <h3>Filtrar transações por ano e mês</h3>
+            <textarea id="transacoes-ano-mes" style="width: 500px; height: 150px"></textarea>
+            <hr>
+            <h3>Calcular o valor das receitas em um determinado mês e ano</h3>
+            <span id="valor-receitas-ano-mes"></span>
+            <hr>
+            <h3>Calcular o valor das despesas em um determinado mês e ano</h3>
+            <span id="valor-despesas-ano-mes"></span>
+            <hr>
+            <h3>Calcular a sobra de determinado mês e ano</h3>
+            <span id="valor-sobras-ano-mes"></span>
+            <hr>
+            <h3>Calcular o saldo final em um determinado ano e mês</h3>
+            <span id="valor-saldo-final-ano-mes"></span>
+            <hr>
+            <h3>Calcular o saldo máximo atingido em determinado ano e mês</h3>
+            <span id="valor-saldo-maximo-ano-mes"></span>
+            <hr>
+            <h3>Calcular o saldo mínimo atingido em determinado ano e mês</h3>
+            <span id="valor-saldo-minimo-ano-mes"></span>
+            <hr>
+            <h3>Calcular a média das receitas em determinado ano</h3>
+            <span id="valor-media-receitas-ano"></span>
+            <hr>
+            <h3>Calcular a média das despesas em determinado ano</h3>
+            <span id="valor-medio-despesas-ano"></span>
+            <hr>
+            <h3>Calcular a média das sobras em determinado ano</h3>
+            <span id="valor-medio-sobras-ano"></span>
+            <hr>
+            <h3>Calcular o fluxo de caixa de determinado mês/ano</h3>
+            <textarea id="valor-fluxo-de-caixa-ano-mes" style="width: 500px; height: 150px"></textarea>
+        </div>
+    </body>
+    
+
+    <script>
+        const BASE_URL = 'http://150.165.15.10:8080/todasTransacoes';
+
+        (async () => {
+            let transacoes = await fetch(BASE_URL, { method: 'post' })
+                .then((response) => response.json())
+                .catch((error) => console.error('Oops! Erro:', error.message || error));
+
+            document.getElementById("botaoExecutar").addEventListener("click", () => calcular());
+            
+            function calcular() {
+                ano = parseInt(document.getElementById("inputAno").value);
+                mes = parseInt(document.getElementById("inputMes").value);
+
+                if (transacoes.filter((transacao) => transacao.data.year === ano).length == 0) {
+                    document.getElementById("resultados").style.display = "none";
+                    document.getElementById("semResultados").style.display = "block";
+                } else {
+                    document.getElementById("resultados").style.display = "block";
+                    document.getElementById("semResultados").style.display = "none";
+
+                    //Filtra transacões por ano
+                    document.getElementById("transacoes-ano").value = "";
+                    filtraTransacoesPorAno(transacoes, ano).map((tr) => {
+                        document.getElementById("transacoes-ano").value += `${tr.textoIdentificador} - data: ${tr.data.dayOfMonth}/${tr.data.month}/${tr.data.year} - valor: ${tr.valor}\n`
+                    });
+                    //Filtrar transações por ano e mês.
+                    document.getElementById("transacoes-ano-mes").value = "";
+                    filtraTransacoesPorAnoMes(transacoes, ano, mes).map((tr) => {
+                        document.getElementById("transacoes-ano-mes").value += `${tr.textoIdentificador} - data: ${tr.data.dayOfMonth}/${tr.data.month}/${tr.data.year} - valor: ${tr.valor}\n`
+                    });
+                    //Calcular o valor das receitas (créditos) em um determinado mês e ano.
+                    document.getElementById("valor-receitas-ano-mes").innerHTML = calculaReceitasAnoMes(transacoes, ano, mes);
+                    //Calcular o valor das despesas (débitos) em um determinado mês e ano.
+                    document.getElementById("valor-despesas-ano-mes").innerHTML = calculaDespesasAnoMes(transacoes, ano, mes);
+                    //Calcular a sobra (receitas - despesas) de determinado mês e ano
+                    document.getElementById("valor-sobras-ano-mes").innerHTML = calculaSobrasAnoMes(transacoes, ano, mes);
+                    //Calcular o saldo final em um determinado ano e mês
+                    document.getElementById("valor-saldo-final-ano-mes").innerHTML = calculaSaldoMes(transacoes, ano, mes);
+                    //Calcular o saldo máximo atingido em determinado ano e mês
+                    document.getElementById("valor-saldo-maximo-ano-mes").innerHTML = calculaSaldoMaximoAnoMes(transacoes, ano, mes);
+                    //Calcular o saldo mínimo atingido em determinado ano e mês
+                    document.getElementById("valor-saldo-minimo-ano-mes").innerHTML = calculaSaldoMinimoAnoMes(transacoes, ano, mes);
+                    //Calcular a média das receitas em determinado ano
+                    document.getElementById("valor-media-receitas-ano").innerHTML = calculaMediaReceitasAno(transacoes, ano);
+                    //Calcular a média das despesas em determinado ano
+                    document.getElementById("valor-medio-despesas-ano").innerHTML = calculaMediaDespesasAno(transacoes, ano);
+                    //Calcular a média das sobras em determinado ano
+                    document.getElementById("valor-medio-sobras-ano").innerHTML = calculaMediaSobrasAno(transacoes, ano);
+                    //Retornar o fluxo de caixa de determinado mês/ano. O fluxo de caixa nada mais é do que uma lista contendo pares (dia,saldoFinalDoDia). 
+                    document.getElementById("valor-fluxo-de-caixa-ano-mes").value = "";
+                    calculaFluxoDeCaixaMesAno(transacoes, ano, mes).map((tupla) => {
+                        document.getElementById("valor-fluxo-de-caixa-ano-mes").value += `Dia: ${tupla[0]} Valor: ${tupla[1]}\n`;
+                    })
+                }
+            }
+
+            //Funções aqui
+
+            function filtraTransacoesPorAno(transacoes, ano) {
+                return transacoes.filter((transacao) => transacao.data.year === ano);
+            }      
+
+            function filtraTransacoesPorAnoMes(transacoes, ano, mes) {
+                return transacoes.filter((transacao) => transacao.data.year === ano && transacao.data.month === mes);
+            }
+
+            function filtraReceitasPorAnoMes(transacoes, ano, mes) {
+                return transacoes.filter((transacao) => (transacao.data.year === ano && transacao.data.month === mes && transacao.valor > 0
+                    && !transacao.tipos.includes("SALDO_CORRENTE") && !transacao.tipos.includes("APLICACAO") && !transacao.tipos.includes("VALOR_APLICACAO")));
+            }
+            
+            function filtraReceitasPorAnoMesDia(transacoes, ano, mes, dia) {
+                return transacoes.filter((transacao) => (transacao.data.year === ano && transacao.data.month === mes && transacao.data.dayOfMonth <= dia && transacao.valor > 0
+                    && !transacao.tipos.includes("SALDO_CORRENTE") && !transacao.tipos.includes("APLICACAO") && !transacao.tipos.includes("VALOR_APLICACAO")));
+            }
+            
+            function filtraDespesasPorAnoMes(transacoes, ano, mes) {
+                return transacoes.filter((transacao) => (transacao.data.year === ano && transacao.data.month === mes && transacao.valor < 0
+                    && !transacao.tipos.includes("SALDO_CORRENTE") && !transacao.tipos.includes("APLICACAO") && !transacao.tipos.includes("VALOR_APLICACAO")));
+            }
+            
+            function filtraDespesasPorAnoMesDia(transacoes, ano, mes, dia) {
+                return transacoes.filter((transacao) => (transacao.data.year === ano && transacao.data.month === mes && transacao.data.dayOfMonth <= dia && transacao.valor < 0 
+                    && !transacao.tipos.includes("SALDO_CORRENTE") && !transacao.tipos.includes("APLICACAO") && !transacao.tipos.includes("VALOR_APLICACAO")));
+            }
+
+            function filtraSaldoInicialAnoMes(transacoes, ano, mes) {
+                let tr = transacoes.filter((transacao) => (transacao.data.year == ano && transacao.data.month == mes && transacao.tipos.includes("SALDO_CORRENTE")));
+
+                if (tr.length == 0) return 0;
+
+                return tr[0].valor;
+            }
+
+            function calculaReceitasAnoMes(transacoes, ano, mes){
+                const reducer = (acc, transacao) => acc + transacao.valor;
+
+                return filtraReceitasPorAnoMes(transacoes, ano, mes).reduce(reducer, 0);
+            }
+            
+            function calculaReceitasAnoMesDia(transacoes, ano, mes, dia){
+                const reducer = (acc, transacao) => acc + transacao.valor;
+                
+                return filtraReceitasPorAnoMesDia(transacoes, ano, mes, dia).reduce(reducer, 0);
+            }
+
+            function calculaDespesasAnoMes(transacoes, ano, mes) {
+                const reducer = (acc, transacao) => acc + transacao.valor;
+
+                return filtraDespesasPorAnoMes(transacoes, ano, mes).reduce(reducer, 0);
+            }
+            
+            function calculaDespesasAnoMesDia(transacoes, ano, mes, dia) {
+                const reducer = (acc, transacao) => acc + transacao.valor;
+                
+                //return filtraDespesasPorAnoMesDia(transacoes, ano, mes, dia).reduce(reducer, 0);
+                return filtraDespesasPorAnoMesDia(transacoes, ano, mes, dia).reduce(reducer, 0);
+            }
+
+            function calculaSobrasAnoMes(transacoes, ano, mes) {
+                return calculaReceitasAnoMes(transacoes, ano, mes) + calculaDespesasAnoMes(transacoes, ano, mes);
+            }
+            
+            function calculaSobrasAnoMesDia(transacoes, ano, mes, dia) {
+                return calculaReceitasAnoMesDia(transacoes, ano, mes, dia) + calculaDespesasAnoMesDia(transacoes, ano, mes, dia);
+            }
+            
+            function calculaSaldoMes(transacoes, ano, mes) {
+                return filtraSaldoInicialAnoMes(transacoes, ano, mes) - Math.abs(calculaSobrasAnoMes(transacoes, ano, mes));
+            }
+            
+            function calculaSaldoMaximoAnoMes(transacoes, ano, mes) {
+                let saldos = diasDoMes(transacoes, ano, mes)
+                    .map((day) => filtraSaldoInicialAnoMes(transacoes, ano, mes) - Math.abs(calculaSobrasAnoMesDia(transacoes, ano, mes, day)));
+
+                return Math.max(...saldos);
+            }
+            
+            function calculaSaldoMinimoAnoMes(transacoes, ano, mes) {
+                let saldos = diasDoMes(transacoes, ano, mes)
+                    .map((day) => filtraSaldoInicialAnoMes(transacoes, ano, mes) - Math.abs(calculaSobrasAnoMesDia(transacoes, ano, mes, day)));
+                
+                return Math.min(...saldos);
+            }
+            
+            function calculaMediaReceitasAno(transacoes, ano) {
+                const sum = [1,2,3,4,5,6,7,8,9,10,11,12].map((mes) => calculaReceitasAnoMes(transacoes, ano, mes)).reduce((acc, curr) => acc + curr, 0)
+                
+                return sum/12;
+            }
+            
+            function calculaMediaDespesasAno(transacoes, ano) {
+                const sum = [1,2,3,4,5,6,7,8,9,10,11,12].map((mes) => calculaDespesasAnoMes(transacoes, ano, mes)).reduce((acc, curr) => acc + curr, 0)
+                
+                return sum/12;
+            }
+            
+            function calculaMediaSobrasAno(transacoes, ano) {
+                const sum = [1,2,3,4,5,6,7,8,9,10,11,12].map((mes) => calculaSobrasAnoMes(transacoes, ano, mes)).reduce((acc, curr) => acc + curr, 0)
+                
+                return sum/12;
+            }
+            
+            function calculaFluxoDeCaixaMesAno(transacoes, ano, mes) {
+                return diasDoMes(transacoes, ano, mes)
+                    .map((dia) => [dia, (filtraSaldoInicialAnoMes(transacoes, ano, mes) - calculaSobrasAnoMesDia(transacoes, ano, mes, dia))]);
+            }
+            
+            function diasDoMes(transacoes, ano, mes) {
+                return Array.from(new Set(filtraTransacoesPorAnoMes(transacoes, ano, mes).map((transacao) => transacao.data.dayOfMonth)))
+            }
+
+        })()
+
+
+        
+
+        /*
+        {
+            arquivos: [],
+            classificada: false,
+            data: {year: 2017, month: 4, dayOfMonth: 2, hourOfDay: 8, minute: 15, …},
+            descricao: "",
+            numeroDOC: "0000290501",
+            textoIdentificador: "CRÉD.LIQ.COBRANÇA",
+            tipos: ["OUTRAS_RECEITAS"],
+            valor: 3294.33
+        }
+        */
+
+
+    </script>
+</html>
