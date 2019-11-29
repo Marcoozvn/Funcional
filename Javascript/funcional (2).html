@@ -207,9 +207,9 @@
             }
             
             function valorAnterior(transacoes, i) {
-                return i == 0 ? 0 : transacoes.valor;
+                return i == 0 ? 0 : transacoes[i].valor;
             }
-            
+
             function calculaMediaReceitasAno(transacoes, ano) {
                 const sum = [1,2,3,4,5,6,7,8,9,10,11,12].map((mes) => calculaReceitasAnoMes(transacoes, ano, mes)).reduce((acc, curr) => acc + curr, 0)
                 
