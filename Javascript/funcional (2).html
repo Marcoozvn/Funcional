@@ -166,7 +166,6 @@
             function calculaDespesasAnoMesDia(transacoes, ano, mes, dia) {
                 const reducer = (acc, transacao) => acc + transacao.valor;
                 
-                //return filtraDespesasPorAnoMesDia(transacoes, ano, mes, dia).reduce(reducer, 0);
                 return filtraDespesasPorAnoMesDia(transacoes, ano, mes, dia).reduce(reducer, 0);
             }
 
@@ -183,17 +182,32 @@
             }
             
             function calculaSaldoMaximoAnoMes(transacoes, ano, mes) {
+                /*
                 let saldos = diasDoMes(transacoes, ano, mes)
                     .map((day) => filtraSaldoInicialAnoMes(transacoes, ano, mes) - Math.abs(calculaSobrasAnoMesDia(transacoes, ano, mes, day)));
 
                 return Math.max(...saldos);
+                */
+
+                //Correção
+                return Math.max(...filtraTransacoesPorAnoMes(transacoes, ano, mes).map((transacao, i) => (valorAnterior(transacoes, i) + transacao.valor)))
             }
+
             
             function calculaSaldoMinimoAnoMes(transacoes, ano, mes) {
+                /*
                 let saldos = diasDoMes(transacoes, ano, mes)
                     .map((day) => filtraSaldoInicialAnoMes(transacoes, ano, mes) - Math.abs(calculaSobrasAnoMesDia(transacoes, ano, mes, day)));
                 
                 return Math.min(...saldos);
+                */
+
+                //Correção
+                return Math.min(...filtraTransacoesPorAnoMes(transacoes, ano, mes).map((transacao, i) => (valorAnterior(transacoes, i) + transacao.valor)))
+            }
+            
+            function valorAnterior(transacoes, i) {
+                return i == 0 ? 0 : transacoes.valor;
             }
             
             function calculaMediaReceitasAno(transacoes, ano) {
